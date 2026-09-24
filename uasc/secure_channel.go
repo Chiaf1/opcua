@@ -437,14 +437,14 @@ func (s *SecureChannel) Receive(ctx context.Context) *MessageBody {
 func (s *SecureChannel) readChunk() (*MessageChunk, error) {
 	// read a full message from the underlying conn.
 	b, err := s.c.Receive()
-	if err == io.EOF || len(b) == 0 {
-		return nil, io.EOF
-	}
-	// do not wrap this error since it hides conn error
 	var uacperr *uacp.Error
 	if errors.As(err, &uacperr) {
 		return nil, err
 	}
+	if err == io.EOF || len(b) == 0 {
+		return nil, io.EOF
+	}
+	// do not wrap this error since it hides conn error
 	if err != nil {
 		return nil, errors.Errorf("sechan: read header failed: %s %#v", err, err)
 	}
