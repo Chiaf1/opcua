@@ -946,3 +946,53 @@ func TestOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestSecurityFromEndpointUsernameTokenPolicySelection(t *testing.T) {
+	tests := []struct {
+		name              string
+		endpoint          *ua.EndpointDescription
+		wantPolicyID      string
+		wantAuthPolicyURI string
+	}{
+		{
+			name: "prefers channel security policy match",
+			endpoint: &ua.EndpointDescription{
+				SecurityPolicyURI: "channel-policy",
+				ServerCertificate: certDER,
+				UserIdentityTokens: []*ua.UserTokenPolicy{
+					{TokenType: ua.UserTokenTypeUserName, PolicyID: "first", SecurityPolicyURI: "legacy-policy"},
+					{TokenType: ua.UserTokenTypeAnonymous, PolicyID: "anonymous", SecurityPolicyURI: "channel-policy"},
+					{TokenType: ua.UserTokenTypeUserName, PolicyID: "matching", SecurityPolicyURI: "channel-policy"},
+				},
+			},
+			wantPolicyID:      "matching",
+			wantAuthPolicyURI: "channel-policy",
+		},
+		{
+			name: "falls back to first matching username token",
+			endpoint: &ua.EndpointDescription{
+				SecurityPolicyURI: "channel-policy",
+				ServerCertificate: certDER,
+				UserIdentityTokens: []*ua.UserTokenPolicy{
+					{TokenType: ua.UserTokenTypeUserName, PolicyID: "first", SecurityPolicyURI: "first-token-policy"},
+					{TokenType: ua.UserTokenTypeAnonymous, PolicyID: "anonymous", SecurityPolicyURI: "channel-policy"},
+					{TokenType: ua.UserTokenTypeUserName, PolicyID: "second", SecurityPolicyURI: "second-token-policy"},
+				},
+			},
+			wantPolicyID:      "first",
+			wantAuthPolicyURI: "first-token-policy",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := ApplyConfig(SecurityFromEndpoint(tt.endpoint, ua.UserTokenTypeUserName))
+			require.NoError(t, err)
+
+			token, ok := cfg.session.UserIdentityToken.(*ua.UserNameIdentityToken)
+			require.True(t, ok)
+			require.Equal(t, tt.wantPolicyID, token.PolicyID)
+			require.Equal(t, tt.wantAuthPolicyURI, cfg.session.AuthPolicyURI)
+		})
+	}
+}
