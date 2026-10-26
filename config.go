@@ -425,7 +425,7 @@ func SecurityFromEndpoint(ep *ua.EndpointDescription, authType ua.UserTokenType)
 			if token == nil {
 				token = t
 			}
-			if t.SecurityPolicyURI == ep.SecurityPolicyURI {
+			if t.SecurityPolicyURI == ep.SecurityPolicyURI || t.SecurityPolicyURI == "" {
 				token = t
 				break
 			}
