@@ -417,6 +417,8 @@ func SecurityFromEndpoint(ep *ua.EndpointDescription, authType ua.UserTokenType)
 		// policy: the credentials are encrypted with this policy, so it must
 		// be compatible with the server certificate's key size. Fall back to
 		// the first matching token for backward compatibility.
+		// On a None channel, skip the exact-match preference: it would
+		// select an unencrypted token and send the password in clear.
 		var token *ua.UserTokenPolicy
 		for _, t := range ep.UserIdentityTokens {
 			if t.TokenType != authType {
@@ -425,7 +427,8 @@ func SecurityFromEndpoint(ep *ua.EndpointDescription, authType ua.UserTokenType)
 			if token == nil {
 				token = t
 			}
-			if t.SecurityPolicyURI == ep.SecurityPolicyURI || t.SecurityPolicyURI == "" {
+			if ep.SecurityPolicyURI != ua.SecurityPolicyURINone &&
+				(t.SecurityPolicyURI == ep.SecurityPolicyURI || t.SecurityPolicyURI == "") {
 				token = t
 				break
 			}

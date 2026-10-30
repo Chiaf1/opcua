@@ -996,6 +996,19 @@ func TestSecurityFromEndpointUsernameTokenPolicySelection(t *testing.T) {
 			wantPolicyID:      "inherited",
 			wantAuthPolicyURI: "channel-policy",
 		},
+		{
+			name: "keeps first token on None channel",
+			endpoint: &ua.EndpointDescription{
+				SecurityPolicyURI: ua.SecurityPolicyURINone,
+				ServerCertificate: certDER,
+				UserIdentityTokens: []*ua.UserTokenPolicy{
+					{TokenType: ua.UserTokenTypeUserName, PolicyID: "encrypted", SecurityPolicyURI: "legacy-policy"},
+					{TokenType: ua.UserTokenTypeUserName, PolicyID: "none", SecurityPolicyURI: ua.SecurityPolicyURINone},
+				},
+			},
+			wantPolicyID:      "encrypted",
+			wantAuthPolicyURI: "legacy-policy",
+		},
 	}
 
 	for _, tt := range tests {
